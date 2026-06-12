@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAWASAKI Z900RS Telemetry</title>
+    <style>
+        :root {
+            /* Neumorphic Dark Palette */
+            --bg-color: #1a1d20;
+            --text-main: #ffffff;
+            --text-muted: #7a828a;
+
+            /* RPM Dynamic Colors */
+            --rpm-green: #00ff88;
+            --rpm-yellow: #ffcc00;
+            --rpm-orange: #ff8800;
+            --rpm-red: #ff003c;
+
+            /* Initial Accent */
+            --accent-color: var(--rpm-green);
+            --accent-glow: rgba(0, 255, 136, 0.4);
+
+            /* Strict Neumorphic Shadows */
+            --shadow-out: -6px -6px 16px rgba(255, 255, 255, 0.03),
+                6px 6px 16px rgba(0, 0, 0, 0.4);
+            --shadow-in: inset -4px -4px 8px rgba(255, 255, 255, 0.03),
+                inset 4px 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #0d0e10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* App Container */
+        .app-viewport {
+            width: 390px;
+            height: 844px;
+            background-color: var(--bg-color);
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Header Navigation */
+        @keyframes fadeSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeScaleIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 10px 24px;
+            z-index: 10;
+            animation: fadeSlideUp 0.8s ease-out;
+        }
+
+        .btn-round {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-out);
+            border: none;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 18px;
+        }
+
+        .btn-round:active {
+            box-shadow: var(--shadow-in);
+            color: var(--text-main);
+        }
+
+        .header-title {
+            text-align: center;
+        }
+
+        .header-title span {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: block;
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        .ride-mode-badge {
+            margin-top: 8px;
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--rpm-green);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+        }
+
+        /* Main Scrollable Content */
+        .main-content {
+            flex: 1;
+            padding: 0px 0px 24px 0px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .main-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* SPA Pages */
+        .page-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInPage 0.4s ease-out both;
+        }
+
+        .page-content.active {
+            display: flex;
+        }
+
+        @keyframes fadeInPage {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Horizontal Achievement Cards */
+        .ach-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 40px 0 50px 0;
+            width: 100%;
+        }
+        .ach-hero.animate-entrance {
+            animation: fadeSlideUp 0.6s ease-out both;
+        }
+        .ach-hero-val {
+            font-size: 120px;
+            font-weight: 200;
+            line-height: 1;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(255,255,255,0.15);
+        }
+        .ach-hero-unit {
+            font-size: 16px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .ach-cards-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            width: 100%;
+            padding: 10px 20px 40px 20px;
+            box-sizing: border-box;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+        }
+        .ach-cards-container.animate-entrance {
+            animation: fadeSlideUp 0.8s ease-out 0.2s both;
+        }
+        .ach-records-lbl.animate-entrance {
+            animation: fadeSlideUp 0.7s ease-out 0.1s both;
+        }
+        .ach-cards-container::-webkit-scrollbar {
+            display: none;
+        }
+        .ach-card {
+            flex: 0 0 160px;
+            scroll-snap-align: center;
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5));
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 160px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2), inset 0 2px 5px rgba(255,255,255,0.02);
+            position: relative;
+            cursor: pointer;
+        }
+        .ach-card-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.03);
+            color: var(--text-main);
+        }
+        .ach-card-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+        .ach-card-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .ach-card-lbl {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .ach-card-val {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            font-family: monospace;
+            text-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+        .ach-date {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: monospace;
+            margin-top: 5px;
+        }
+
+        /* Toggle Switch CSS */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--bg-color);
+            box-shadow: var(--shadow-in);
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            transition: .4s;
+        }
+        input:checked + .slider:before {
+            background-color: var(--rpm-green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+            transform: translateX(20px);
+        }
+        .slider.round {
+            border-radius: 24px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* Settings CSS */
+        .setting-card {
+            background: var(--bg-color);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow-out);
+            margin-bottom: 24px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .setting-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .setting-row:first-child {
+            padding-top: 0;
+        }
+        .setting-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+        }
+
+        /* Cruise Control Top HUD */
+        .cruise-display {
+            position: absolute;
+            top: 45px;
+            left: 25px;
+            text-align: left;
+            z-index: 10;
+            animation: fadeSlideUp 0.8s ease-out 0.1s both;
+        }
+
+        .cruise-val {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--text-main);
+            letter-spacing: 1px;
+        }
+
+        .cruise-lbl {
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        /* G-Force Top HUD */
+        .gforce-display {
+            position: absolute;
+            top: 45px;
+            right: 25px;
+            text-align: right;
+            z-index: 10;
+            animation: fadeSlideUp 0.8s ease-out 0.1s both;
+        }
+
+        .gforce-val {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--rpm-orange);
+            text-shadow: 0 0 10px rgba(255, 136, 0, 0.4);
+        }
+
+        .gforce-lbl {
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+
+        .sys-icon {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            bottom: 0px;
+            z-index: 5;
+            transition: color 0.2s ease, filter 0.2s ease;
+        }
+
+        .sys-icon.ktrc {
+            left: -15px;
+        }
+
+        .sys-icon.kqs {
+            right: -15px;
+        }
+
+        .sys-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: currentColor;
+        }
+
+        .sys-icon span {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Hero Tachometer */
+        .dial-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            position: relative;
+            z-index: 2;
+            animation: fadeScaleIn 1s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+
+        .dial-outer {
+            width: 230px;
+            height: 230px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-out);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dial-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .dial-bg-track {
+            fill: none;
+            stroke: #121416;
+            stroke-width: 12;
+            stroke-linecap: round;
+        }
+
+        .dial-progress-bar {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s ease-out, filter 0.3s ease;
+            filter: drop-shadow(0px 0px 8px var(--accent-glow));
+        }
+
+        .dial-inner {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-in);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .speed-display {
+            font-size: 58px;
+            font-weight: 700;
+            letter-spacing: -2px;
+            line-height: 1;
+            font-family: 'SF Pro Display', monospace;
+        }
+
+        .speed-unit {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            letter-spacing: 2px;
+        }
+
+        .rpm-text-inner {
+            font-size: 11px;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+            transition: color 0.2s ease;
+        }
+
+        /* ODO Mechanical Counter */
+        .odo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .odo-lbl {
+            font-size: 7px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .odo-roller {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--text-main);
+            height: 14px;
+        }
+
+        .odo-digit {
+            width: 9px;
+            height: 14px;
+            line-height: 14px;
+            overflow: hidden;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .odo-strip {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Gear Indicator Relocated */
+        .gear-row-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 5px;
+            z-index: 10;
+            position: relative;
+        }
+
+        .gear-row {
+            display: flex;
+            gap: 12px;
+            padding: 8px 24px;
+        }
+
+        .gear-item {
+            font-size: 15px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.15);
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        .gear-item.active {
+            color: var(--text-main);
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+        }
+
+        .gear-item.active-n {
+            color: var(--rpm-green);
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+        }
+
+        .gear-item.shifting {
+            color: var(--rpm-red);
+            text-shadow: 0 0 8px rgba(255, 0, 60, 0.6);
+        }
+
+        /* Throttle Linear Bar */
+        .throttle-container {
+            width: 85%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .throttle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .throttle-track {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--shadow-in);
+            box-shadow: var(--shadow-in);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .throttle-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--rpm-green);
+            /* Simplified solid color */
+            border-radius: 3px;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Orbiting Satellites (Sensors) */
+        .satellites-container {
+            display: flex;
+            justify-content: space-between;
+            width: 85%;
+            margin-top: 25px;
+        }
+
+        .satellite {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-out);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            animation: fadeScaleIn 0.8s cubic-bezier(0.1, 0.9, 0.2, 1) both;
+        }
+
+        .satellites-container .satellite:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .satellites-container .satellite:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .satellites-container .satellite:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .satellites-container .satellite:nth-child(4) {
+            animation-delay: 0.5s;
+        }
+
+        .satellite::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border-radius: 50%;
+            background: var(--bg-color);
+            box-shadow: var(--shadow-in);
+            z-index: 1;
+        }
+
+        .sat-val {
+            position: relative;
+            z-index: 2;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: monospace;
+            color: var(--text-main);
+        }
+
+        .sat-lbl {
+            position: relative;
+            z-index: 2;
+            font-size: 9px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        /* Middle Row (Range, Throttle, Avg) */
+        .middle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 85%;
+            margin-top: 20px;
+        }
+
+        .side-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .side-stat.left {
+            align-items: flex-start;
+        }
+
+        .side-stat.right {
+            align-items: flex-end;
+        }
+
+        .side-stat .stat-val {
+            font-size: 18px;
+            font-weight: 700;
+            font-family: monospace;
+            color: var(--text-main);
+            line-height: 1;
+        }
+
+        .side-stat .stat-val span {
+            font-size: 9px;
+            color: var(--text-muted);
+            font-family: sans-serif;
+            margin-left: 2px;
+        }
+
+        .side-stat .stat-lbl {
+            font-size: 8px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* Session Summary Panel */
+        .session-summary-container {
+            width: 85%;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            animation: fadeSlideUp 0.8s ease-out 0.6s both;
+        }
+
+        .session-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .session-tag {
+            color: var(--rpm-green);
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .session-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .sess-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 4px;
+        }
+
+        .sess-lbl {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .sess-val {
+            font-size: 16px;
+            font-family: monospace;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .sess-val span {
+            font-size: 10px;
+            font-family: sans-serif;
+            color: var(--text-muted);
+            margin-left: 1px;
+        }
+
+        /* Bottom Navigation Bar */
+        .bottom-nav {
+            width: 100%;
+            height: 80px;
+            background: var(--bg-color);
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.02);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 10px 10px 10px;
+            z-index: 20;
+            animation: fadeSlideUp 0.8s ease-out 0.8s both;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 15px 25px 0 25px;
+            box-sizing: border-box;
+            z-index: 20;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .brand-group .mfg {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: 1px;
+        }
+
+        .brand-group .model {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+        }
+
+        .ride-mode-badge {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--rpm-green);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .bt-icon-btn {
+            background: var(--bg-color);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-out);
+        }
+
+        .bt-icon-btn:active {
+            box-shadow: var(--shadow-in);
+        }
+
+        .bt-icon-btn.connected {
+            color: #0088ff;
+        }
+
+        @keyframes pulseBT {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .nav-item {
+            background: transparent;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 60px;
+            padding: 8px 0;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            transition: color 0.3s ease, filter 0.3s ease;
+        }
+
+        .nav-item span {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: var(--text-main);
+            transform: translateY(-4px);
+        }
+
+        .nav-item.active svg {
+            color: var(--rpm-green);
+            filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.6));
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-viewport">
+        <header class="top-bar">
+            <div class="brand-group">
+                <span class="mfg">KAWASAKI</span>
+                <span class="model">Z900RS</span>
+            </div>
+
+            <button class="bt-icon-btn connected" id="bt-icon-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m7 7 10 10-5 5V2l5 5-10 10" />
+                </svg>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <div id="page-dash" class="page-content active">
+
+                <!-- Cruise Control Top HUD -->
+                <div class="cruise-display">
+                    <div class="cruise-val" id="cruise-val">OFF</div>
+                    <div class="cruise-lbl">CRUISE</div>
+
+                    <div id="ktrc-icon"
+                        style="margin-top: 15px; display: flex; flex-direction: column; gap: 4px; color: var(--text-muted); transition: color 0.2s ease, filter 0.2s ease;">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12C2 15.65 3.96 18.84 6.96 20.61C7.57 20.97 8.32 20.59 8.36 19.89C8.38 19.46 8.09 19.07 7.69 18.9C5.46 17.92 4 15.65 4 13C4 8.58 7.58 5 12 5C16.42 5 20 8.58 20 13C20 15.65 18.54 17.92 16.31 18.9C15.91 19.07 15.62 19.46 15.64 19.89C15.68 20.59 16.43 20.97 17.04 20.61C20.04 18.84 22 15.65 22 12C22 6.48 17.52 2 12 2ZM13.88 10.12C13.59 9.83 13.11 9.83 12.82 10.12L10.71 12.23C10.53 12.41 10.53 12.71 10.71 12.89C10.89 13.07 11.19 13.07 11.37 12.89L13.48 10.78C13.77 10.49 13.77 10.01 13.48 9.72V10.12Z" />
+                            <circle cx="12" cy="14" r="2.5" />
+                        </svg>
+                        <span style="font-size: 8px; font-weight: 700; letter-spacing: 1px;">KTRC</span>
+                    </div>
+                </div>
+
+                <!-- G-Force Top HUD -->
+                <div class="gforce-display">
+                    <div class="gforce-val" id="gforce-val">1.00 G</div>
+                    <div class="gforce-lbl">G-FORCE</div>
+
+                    <div id="kqs-icon"
+                        style="margin-top: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; color: var(--text-muted); transition: color 0.2s ease, filter 0.2s ease;">
+                        <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: currentColor;">
+                            <path d="M8 9l4-4 4 4H8zm8 6l-4 4-4-4h8z" />
+                            <path d="M12 6v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                        <span style="font-size: 8px; font-weight: 700; letter-spacing: 1px;">KQS</span>
+                    </div>
+                </div>
+
+                <!-- Hero Tachometer -->
+                <div class="dial-container">
+
+                    <!-- Relocated Trip A & B -->
+                    <div class="sys-icon ktrc" style="align-items: center; bottom: -5px;">
+                        <div
+                            style="font-size: 14px; font-weight: 700; color: var(--text-main); font-family: monospace;">
+                            229.5</div>
+                        <div
+                            style="font-size: 8px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; margin-top: 2px;">
+                            TRIP A (KM)</div>
+                    </div>
+
+                    <div class="sys-icon kqs" style="align-items: center; bottom: -5px;">
+                        <div
+                            style="font-size: 14px; font-weight: 700; color: var(--text-main); font-family: monospace;">
+                            840.2</div>
+                        <div
+                            style="font-size: 8px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; margin-top: 2px;">
+                            TRIP B (KM)</div>
+                    </div>
+
+                    <div class="dial-outer" id="dial-zone">
+                        <svg class="dial-svg" viewBox="0 0 230 230">
+                            <defs>
+                                <!-- Gradient applied horizontally across the user space -->
+                                <linearGradient id="rpmGradient" gradientUnits="userSpaceOnUse" x1="15" y1="115"
+                                    x2="215" y2="115" gradientTransform="rotate(-150 115 115)">
+                                    <stop offset="0%" stop-color="var(--rpm-green)" />
+                                    <stop offset="45%" stop-color="var(--rpm-yellow)" />
+                                    <stop offset="70%" stop-color="var(--rpm-orange)" />
+                                    <stop offset="100%" stop-color="var(--rpm-red)" />
+                                </linearGradient>
+                            </defs>
+                            <!-- r=100. Circumference = 628.3. 240 degrees = 419 length. 
+                             Starts at 150 degrees, which is 150/360 * 628.3 = 261 offset. -->
+                            <circle class="dial-bg-track" cx="115" cy="115" r="100" stroke-dasharray="419 629"
+                                stroke-dashoffset="0" transform="rotate(150 115 115)"></circle>
+                            <circle class="dial-progress-bar" id="rpm-arc" cx="115" cy="115" r="100"
+                                stroke-dasharray="419 629" stroke-dashoffset="419" stroke="url(#rpmGradient)"
+                                transform="rotate(150 115 115)"></circle>
+
+                            <!-- Lean Bottom Track -->
+                            <circle cx="115" cy="115" r="100" stroke-dasharray="87.2 629" stroke-dashoffset="0"
+                                stroke="rgba(255,255,255,0.05)" stroke-width="4" fill="none"
+                                style="transform-origin: 115px 115px; transform: rotate(92deg);"></circle>
+                            <circle cx="115" cy="115" r="100" stroke-dasharray="87.2 629" stroke-dashoffset="0"
+                                stroke="rgba(255,255,255,0.05)" stroke-width="4" fill="none"
+                                style="transform-origin: 115px 115px; transform: scale(-1, 1) rotate(92deg);"></circle>
+
+                            <!-- Lean Bottom Fills -->
+                            <circle id="lean-l-arc" cx="115" cy="115" r="100" stroke-dasharray="0 629"
+                                stroke-dashoffset="0" stroke="var(--rpm-green)" stroke-width="6" fill="none"
+                                stroke-linecap="round"
+                                style="transform-origin: 115px 115px; transform: rotate(92deg); transition: stroke-dasharray 0.1s linear, stroke 0.2s ease;">
+                            </circle>
+                            <circle id="lean-r-arc" cx="115" cy="115" r="100" stroke-dasharray="0 629"
+                                stroke-dashoffset="0" stroke="var(--rpm-green)" stroke-width="6" fill="none"
+                                stroke-linecap="round"
+                                style="transform-origin: 115px 115px; transform: scale(-1, 1) rotate(92deg); transition: stroke-dasharray 0.1s linear, stroke 0.2s ease;">
+                            </circle>
+                        </svg>
+                        <div class="dial-inner">
+                            <div class="rpm-text-inner" id="rpm-text-val">0 RPM</div>
+                            <div class="speed-display" id="speed-val">0</div>
+                            <div class="speed-unit">KM/H</div>
+                            <div
+                                style="display: flex; justify-content: center; align-items: flex-end; gap: 24px; margin-top: 15px;">
+                                <div class="odo-container" style="margin-top: 0;">
+                                    <div class="odo-roller" id="odo-roller">
+                                        <div class="odo-digit">
+                                            <div class="odo-strip" id="odo-s6">
+                                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                                            </div>
+                                        </div>
+                                        <div class="odo-digit">
+                                            <div class="odo-strip" id="odo-s5">
+                                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                                            </div>
+                                        </div>
+                                        <div class="odo-digit">
+                                            <div class="odo-strip" id="odo-s4">
+                                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                                            </div>
+                                        </div>
+                                        <div class="odo-digit">
+                                            <div class="odo-strip" id="odo-s3">
+                                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                                            </div>
+                                        </div>
+                                        <div class="odo-digit">
+                                            <div class="odo-strip" id="odo-s2">
+                                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                                            </div>
+                                        </div>
+                                        <div class="odo-digit">
+                                            <div class="odo-strip" id="odo-s1">
+                                                <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="odo-lbl">ODO KM</div>
+                                </div>
+                                <div
+                                    style="display: flex; flex-direction: column; align-items: center; margin-bottom: 1px;">
+                                    <span id="lean-val-text"
+                                        style="font-size: 15px; line-height: 14px; font-weight: 700; color: var(--text-main); font-family: monospace;">0°</span>
+                                    <span
+                                        style="font-size: 7px; font-weight: 700; color: var(--text-muted); letter-spacing: 2px; margin-top: 4px;">LEAN</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gear Indicator (Relocated) -->
+                <div class="gear-row-container" style="animation: fadeSlideUp 0.8s ease-out 0.2s both;">
+                    <div class="gear-row" id="gear-row">
+                        <span class="gear-item" id="gear-1">1</span>
+                        <span class="gear-item" id="gear-N">N</span>
+                        <span class="gear-item" id="gear-2">2</span>
+                        <span class="gear-item" id="gear-3">3</span>
+                        <span class="gear-item" id="gear-4">4</span>
+                        <span class="gear-item" id="gear-5">5</span>
+                        <span class="gear-item" id="gear-6">6</span>
+                    </div>
+                </div>
+
+                <!-- Ride Modes & Stats Row -->
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; width: 88%; max-width: 400px; margin: 12px auto 4px auto; animation: fadeSlideUp 0.8s ease-out 0.3s both;">
+                    <!-- Range -->
+                    <div class="side-stat left" style="align-items: flex-start;">
+                        <div class="stat-val" style="font-size: 18px;">290<span style="font-size:10px;">km</span></div>
+                        <div class="stat-lbl" style="font-size: 8px; margin-top: 2px;">RANGE</div>
+                    </div>
+
+                    <!-- Ride Modes -->
+                    <div class="ride-modes" style="display: flex; justify-content: center; gap: 12px;">
+                        <div style="font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted);">
+                            RAIN</div>
+                        <div style="font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted);">
+                            ROAD</div>
+                        <div
+                            style="font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--text-main); text-shadow: 0 0 8px rgba(255,255,255,0.4);">
+                            SPORT</div>
+                        <div style="font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted);">
+                            RIDER</div>
+                    </div>
+
+                    <!-- Avg Mil -->
+                    <div class="side-stat right" style="align-items: flex-end;">
+                        <div class="stat-val" style="font-size: 18px;">18.0<span style="font-size:10px;">km/l</span>
+                        </div>
+                        <div class="stat-lbl" style="font-size: 8px; margin-top: 2px;">AVG MIL</div>
+                    </div>
+                </div>
+
+                <!-- Middle Row (Throttle only) -->
+                <div class="middle-row"
+                    style="justify-content: center; animation: fadeSlideUp 0.8s ease-out 0.4s both;">
+                    <div class="throttle-container">
+                        <div class="throttle-header">
+                            <span>THROTTLE</span>
+                            <span class="throttle-val" style="color:var(--text-main); font-family:monospace;"><span
+                                    id="throttle-val">0</span>%</span>
+                        </div>
+                        <div class="throttle-track">
+                            <div class="throttle-fill" id="throttle-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orbiting Satellites (Sensors) -->
+                <div class="satellites-container">
+                    <div class="satellite">
+                        <div class="sat-val" id="coolant-val">176°</div>
+                        <div class="sat-lbl">WATER</div>
+                    </div>
+                    <div class="satellite">
+                        <div class="sat-val" id="fuel-val">62%</div>
+                        <div class="sat-lbl">FUEL</div>
+                    </div>
+                    <div class="satellite">
+                        <div class="sat-val" id="air-temp-val">68°</div>
+                        <div class="sat-lbl">AIR</div>
+                    </div>
+                    <div class="satellite">
+                        <div class="sat-val" id="battery-val">14.1</div>
+                        <div class="sat-lbl">VOLT</div>
+                    </div>
+                </div>
+
+                <!-- Session Summary -->
+                <div class="session-summary-container">
+                    <div class="session-header">
+                        <span>SESSION SUMMARY</span>
+                    </div>
+                    <div class="session-grid top-grid"
+                        style="grid-template-columns: repeat(2, 1fr); margin-bottom: 5px;">
+                        <div class="sess-card">
+                            <div class="sess-lbl">RIDE TIME</div>
+                            <div class="sess-val" id="session-time-val" style="font-size: 16px;">00:00</div>
+                        </div>
+                        <div class="sess-card">
+                            <div class="sess-lbl">DISTANCE</div>
+                            <div class="sess-val" id="session-dist-val" style="font-size: 16px;">0.0<span>km</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="session-grid">
+                        <div class="sess-card">
+                            <div class="sess-lbl">LEFT LEAN</div>
+                            <div class="sess-val" id="max-lean-l-val">0<span>°</span></div>
+                        </div>
+                        <div class="sess-card">
+                            <div class="sess-lbl">RIGHT LEAN</div>
+                            <div class="sess-val" id="max-lean-r-val">0<span>°</span></div>
+                        </div>
+                        <div class="sess-card">
+                            <div class="sess-lbl">WHEELIE</div>
+                            <div class="sess-val" id="max-wheelie-val">0.0<span>°</span></div>
+                        </div>
+                        <div class="sess-card">
+                            <div class="sess-lbl">STOPPIE</div>
+                            <div class="sess-val" id="max-stoppie-val">0.0<span>°</span></div>
+                        </div>
+                        <div class="sess-card">
+                            <div class="sess-lbl">G-FORCE</div>
+                            <div class="sess-val" id="max-g-val">1.00<span>G</span></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- Extra Metrics Footer removed and merged above -->
+
+            <!-- ACHIEVEMENTS PAGE -->
+            <div id="page-achievements" class="page-content" style="padding-top: 20px;">
+                
+                <!-- Hero Top Speed -->
+                <div class="ach-hero">
+                    <div style="font-size: 14px; font-weight: 700; color: var(--text-muted); letter-spacing: 2px; margin-bottom: -5px; text-transform: uppercase;">TOP SPEED</div>
+                    <div class="ach-hero-val" id="ach-speed-val">0</div>
+                    <div class="ach-hero-unit">KM/H</div>
+                    <div class="ach-date" id="ach-speed-date" style="margin-top: 10px;">--/--/---- --:--</div>
+                </div>
+
+                <!-- Records Label -->
+                <div class="ach-records-lbl" style="width: 100%; padding: 0 20px; box-sizing: border-box; margin-bottom: 10px; margin-top: 10px; opacity: 0;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;">RECORDS</span>
+                </div>
+
+                <!-- Cards Container -->
+                <div class="ach-cards-container">
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--text-main);">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">0-100 KM/H</div>
+                            <div class="ach-card-val" id="ach-0100-val">--</div>
+                            <div class="ach-date" id="ach-0100-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Max G -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--rpm-orange);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">MAX G-FORCE</div>
+                            <div class="ach-card-val" id="ach-g-val">1.00</div>
+                            <div class="ach-date" id="ach-g-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Max Lean L -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--rpm-green);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(-15deg);">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">LEAN LEFT</div>
+                            <div class="ach-card-val" id="ach-lean-l-val">0°</div>
+                            <div class="ach-date" id="ach-lean-l-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Max Lean R -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--rpm-green);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(15deg) scaleX(-1);">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">LEAN RIGHT</div>
+                            <div class="ach-card-val" id="ach-lean-r-val">0°</div>
+                            <div class="ach-date" id="ach-lean-r-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Max Wheelie -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--text-muted);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(-30deg);">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">MAX WHEELIE</div>
+                            <div class="ach-card-val" id="ach-wheelie-val">0°</div>
+                            <div class="ach-date" id="ach-wheelie-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Max Stoppie -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--text-muted);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform: rotate(30deg);">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">MAX STOPPIE</div>
+                            <div class="ach-card-val" id="ach-stoppie-val">0°</div>
+                            <div class="ach-date" id="ach-stoppie-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Longest Ride Distance -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--text-main);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12h18" />
+                                <path d="M16 6l6 6-6 6" />
+                                <path d="M8 6l-6 6 6 6" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">LONG RIDE (DIST)</div>
+                            <div class="ach-card-val" id="ach-dist-val">--</div>
+                            <div class="ach-date" id="ach-dist-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                    <!-- Longest Ride Time -->
+                    <div class="ach-card">
+                        <div class="ach-card-icon" style="color: var(--text-main);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                        </div>
+                        <div class="ach-card-info">
+                            <div class="ach-card-lbl">LONG RIDE (TIME)</div>
+                            <div class="ach-card-val" id="ach-time-val">--</div>
+                            <div class="ach-date" id="ach-time-date">--/--/---- --:--</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SETTINGS PAGE -->
+            <div id="page-settings" class="page-content" style="padding: 20px 24px; box-sizing: border-box; overflow-y: auto; width: 100%;">
+                
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 2px; margin-bottom: 12px; margin-top: 10px; text-transform: uppercase; margin-left: 5px;">Preferences</div>
+                
+                <!-- Toggles Container -->
+                <div class="setting-card">
+                    <!-- Toggle 1 -->
+                    <div class="setting-row">
+                        <span class="setting-label">Call Notifications</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <!-- Toggle 2 -->
+                    <div class="setting-row">
+                        <span class="setting-label">SMS Notifications</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <!-- Toggle 3 -->
+                    <div class="setting-row">
+                        <span class="setting-label">Turn-by-Turn Navigation</span>
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <!-- Toggle 4 -->
+                    <div class="setting-row">
+                        <span class="setting-label">Phone Battery Mirroring</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Developer Card -->
+                <div class="setting-card" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 40px; margin-top: 10px;">
+                    <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--bg-color); box-shadow: var(--shadow-out); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; color: var(--rpm-green);">
+                        <svg viewBox="0 0 24 24" style="width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 800; color: var(--text-main); letter-spacing: 1px;">MyRide</div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-top: 5px;">Developed by</div>
+                    <a href="https://github.com/kalaiselvan-arumugam/" target="_blank" style="font-size: 12px; font-weight: 600; color: var(--rpm-green); text-decoration: none; margin-top: 8px; word-break: break-all;">github.com/kalaiselvan-arumugam</a>
+                </div>
+                
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation Bar with Modern Solid SVGs -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" id="nav-dash" aria-label="Dashboard">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12C2 15.65 3.96 18.84 6.96 20.61C7.57 20.97 8.32 20.59 8.36 19.89C8.38 19.46 8.09 19.07 7.69 18.9C5.46 17.92 4 15.65 4 13C4 8.58 7.58 5 12 5C16.42 5 20 8.58 20 13C20 15.65 18.54 17.92 16.31 18.9C15.91 19.07 15.62 19.46 15.64 19.89C15.68 20.59 16.43 20.97 17.04 20.61C20.04 18.84 22 15.65 22 12C22 6.48 17.52 2 12 2ZM13.88 10.12C13.59 9.83 13.11 9.83 12.82 10.12L10.71 12.23C10.53 12.41 10.53 12.71 10.71 12.89C10.89 13.07 11.19 13.07 11.37 12.89L13.48 10.78C13.77 10.49 13.77 10.01 13.48 9.72V10.12Z" />
+                    <circle cx="12" cy="14" r="2.5" />
+                </svg>
+                <span>DASH</span>
+            </button>
+            <button class="nav-item" id="nav-ach" aria-label="Achievements">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M16 6L18.29 8.29L13.41 13.17L9.41 9.17L2 16.59L3.41 18L9.41 12L13.41 16L19.71 9.71L22 12V6H16Z" />
+                </svg>
+                <span>ACHIEVEMENTS</span>
+            </button>
+            <button class="nav-item" id="nav-set" aria-label="Settings">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                </svg>
+                <span>SETTINGS</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // Bluetooth State
+        const btBtn = document.getElementById('bt-icon-btn');
+        let isBtConnected = true;
+
+        btBtn.addEventListener('click', () => {
+            if (isBtConnected) {
+                isBtConnected = false;
+                btBtn.className = 'bt-icon-btn';
+            } else {
+                btBtn.className = 'bt-icon-btn connecting';
+                setTimeout(() => {
+                    isBtConnected = true;
+                    btBtn.className = 'bt-icon-btn connected';
+                }, 1500);
+            }
+        });
+
+        // DOM Elements
+        const rpmArc = document.getElementById('rpm-arc');
+        const speedVal = document.getElementById('speed-val');
+        const rpmTextVal = document.getElementById('rpm-text-val');
+        const throttleFill = document.getElementById('throttle-fill');
+        const throttleValText = document.getElementById('throttle-val');
+        const leanValText = document.getElementById('lean-val-text');
+        const leanLArc = document.getElementById('lean-l-arc');
+        const leanRArc = document.getElementById('lean-r-arc');
+        const gforceVal = document.getElementById('gforce-val');
+        const cruiseVal = document.getElementById('cruise-val');
+
+        const ktrcIcon = document.getElementById('ktrc-icon');
+        const kqsIcon = document.getElementById('kqs-icon');
+
+        // Session Summary Tracking elements
+        const maxLeanLEl = document.getElementById('max-lean-l-val');
+        const maxLeanREl = document.getElementById('max-lean-r-val');
+        const maxWheelieEl = document.getElementById('max-wheelie-val');
+        const maxStoppieEl = document.getElementById('max-stoppie-val');
+        const maxGEl = document.getElementById('max-g-val');
+
+        const root = document.documentElement;
+
+        // RPM Arc Constants
+        const maxRpm = 12500;
+        const arcLength = 419; // 240 degrees out of 360 = 418.8 
+
+        // Initial State
+        let currentRpm = 0;
+        let targetRpm = 1000;
+        let speed = 0;
+        let targetSpeed = 0;
+        let gear = 0; // Start at N
+        let time = 0;
+        let previousGear = -1;
+        let gearShiftTimeout = null;
+        let isShifting = false;
+        let isBooting = true;
+        let bootTime = 0;
+        let currentOdo = 20036.0;
+
+        // Telemetry Simulation State
+        let simPhase = 'IDLE';
+        let simTimer = 0;
+        let simGear = 0;
+        let simSpeed = 0;
+        let simRpm = 1100;
+        let targetThrottle = 0;
+        let targetGForce = 1.0;
+
+        const MAX_GEAR = 6;
+        const REDLINE_RPM = 11500;
+        const IDLE_RPM = 1100;
+
+        const gearRatios = [
+            0,
+            120 / REDLINE_RPM, // 1st
+            160 / REDLINE_RPM, // 2nd
+            200 / REDLINE_RPM, // 3rd
+            235 / REDLINE_RPM, // 4th
+            270 / REDLINE_RPM, // 5th
+            299 / REDLINE_RPM  // 6th
+        ];
+
+        // Session Highscores
+        let sessionMaxLeanL = 0;
+        let sessionMaxLeanR = 0;
+        let sessionMaxWheelie = 0;
+        let sessionMaxStoppie = 0;
+        let sessionMaxG = 1.0;
+        let sessionDistance = 0.0;
+        let sessionTimeMs = 0;
+
+        function updateGlow(rpm) {
+            let glow;
+            if (rpm < 4000) {
+                glow = "rgba(0, 255, 136, 0.4)";
+            } else if (rpm < 6000) {
+                glow = "rgba(255, 204, 0, 0.4)";
+            } else if (rpm < 8000) {
+                glow = "rgba(255, 136, 0, 0.4)";
+            } else {
+                glow = "rgba(255, 0, 60, 0.5)";
+            }
+            root.style.setProperty('--accent-glow', glow);
+        }
+
+        function updateUI() {
+            // Interpolate
+            currentRpm += (targetRpm - currentRpm) * 0.1;
+            speed += (targetSpeed - speed) * 0.05;
+
+            // Update RPM Dial - Offset goes from 419 (empty) to 0 (full)
+            let rpmRatio = Math.min(Math.max(currentRpm / maxRpm, 0), 1);
+            let dashOffset = arcLength - (arcLength * rpmRatio);
+            rpmArc.style.strokeDashoffset = dashOffset;
+
+            updateGlow(currentRpm);
+            rpmTextVal.textContent = Math.round(currentRpm).toString() + " RPM";
+            if (currentRpm > 10000) {
+                rpmTextVal.style.color = "var(--rpm-red)";
+            } else {
+                rpmTextVal.style.color = "var(--text-muted)";
+            }
+
+            // Update ODO Mechanical Counter
+            currentOdo += (speed * 0.00005); // Simulate distance driven
+            sessionDistance += (speed * 0.00005);
+
+            let d = [];
+            d[0] = (currentOdo * 10) % 10;
+            d[1] = Math.floor(currentOdo % 10) + Math.max(0, d[0] - 9);
+            d[2] = Math.floor((currentOdo / 10) % 10) + Math.max(0, d[1] - 9);
+            d[3] = Math.floor((currentOdo / 100) % 10) + Math.max(0, d[2] - 9);
+            d[4] = Math.floor((currentOdo / 1000) % 10) + Math.max(0, d[3] - 9);
+            d[5] = Math.floor((currentOdo / 10000) % 10) + Math.max(0, d[4] - 9);
+            d[6] = Math.floor((currentOdo / 100000) % 10) + Math.max(0, d[5] - 9);
+
+            for (let i = 0; i < 7; i++) {
+                let strip = document.getElementById(`odo-s${i}`);
+                if (strip) {
+                    strip.style.transform = `translateY(-${d[i] * 14}px)`;
+                }
+            }
+
+            // Speed & Gear
+            speedVal.textContent = Math.round(speed);
+
+            // Handle Gear Shifts
+            if (gear !== previousGear) {
+                isShifting = true;
+                clearTimeout(gearShiftTimeout);
+                gearShiftTimeout = setTimeout(() => {
+                    isShifting = false;
+                }, 400); // Shift highlight duration
+                previousGear = gear;
+            }
+
+            // Update KQS Icon
+            if (isShifting && gear !== 0) {
+                kqsIcon.style.color = "var(--rpm-green)";
+                kqsIcon.style.filter = "drop-shadow(0 0 6px var(--accent-glow))";
+            } else {
+                kqsIcon.style.color = "var(--text-muted)";
+                kqsIcon.style.filter = "none";
+            }
+
+            const gearArr = ['1', 'N', '2', '3', '4', '5', '6'];
+            const displayStr = gear === 0 ? 'N' : gear.toString();
+
+            gearArr.forEach(g => {
+                const el = document.getElementById('gear-' + g);
+                el.className = 'gear-item'; // reset
+                if (g === displayStr) {
+                    if (isShifting && displayStr !== 'N') {
+                        el.classList.add('shifting');
+                    } else if (displayStr === 'N') {
+                        el.classList.add('active-n');
+                    } else {
+                        el.classList.add('active');
+                    }
+                }
+            });
+
+            // Throttle
+            let finalThrottle = targetThrottle;
+            throttleFill.style.width = finalThrottle + "%";
+            throttleValText.textContent = Math.round(finalThrottle);
+
+            // Dynamics (Simulated Turning, Wheelies & Gs)
+            let leanBase = Math.sin(time * 0.05) * 45;
+            if (speed < 10) leanBase = 0;
+
+            let leanLeft = leanBase < 0 ? Math.abs(leanBase) : 0;
+            let leanRight = leanBase > 0 ? leanBase : 0;
+
+            // Simulated pitch (Wheelie/Stoppie)
+            let pitch = 0;
+            if (finalThrottle > 80 && speed > 20 && speed < 80) pitch = 8.5;
+            if (targetSpeed < speed && (speed - targetSpeed) > 1.0) pitch = -4.2;
+
+            // KTRC active on hard acceleration/slip
+            if (pitch > 5 || (finalThrottle > 90 && speed < 40)) {
+                ktrcIcon.style.color = "var(--rpm-orange)";
+                ktrcIcon.style.filter = "drop-shadow(0 0 6px rgba(255,136,0,0.5))";
+            } else {
+                ktrcIcon.style.color = "var(--text-muted)";
+                ktrcIcon.style.filter = "none";
+            }
+
+            if (leanLeft > sessionMaxLeanL) sessionMaxLeanL = leanLeft;
+            if (leanRight > sessionMaxLeanR) sessionMaxLeanR = leanRight;
+            if (pitch > sessionMaxWheelie) sessionMaxWheelie = pitch;
+            if (pitch < 0 && Math.abs(pitch) > sessionMaxStoppie) sessionMaxStoppie = Math.abs(pitch);
+
+            // Text
+            let currentLean = Math.max(leanLeft, leanRight);
+            leanValText.textContent = Math.round(currentLean) + "°";
+
+            // HUD Bars (Bottom Arc)
+            // Max lean = 90 deg. Arc length = 87.2.
+            let lRatio = Math.min(leanLeft / 90, 1);
+            let rRatio = Math.min(leanRight / 90, 1);
+
+            leanLArc.style.strokeDasharray = `${87.2 * lRatio} 629`;
+            leanRArc.style.strokeDasharray = `${87.2 * rRatio} 629`;
+
+            // Color coding based on lean intensity
+            let leanColor = "var(--rpm-green)";
+            if (currentLean > 70) leanColor = "var(--rpm-red)";
+            else if (currentLean > 50) leanColor = "var(--rpm-orange)";
+            else if (currentLean > 30) leanColor = "var(--rpm-yellow)";
+
+            // Hide stroke completely for the inactive side to prevent 0-length round caps
+            leanLArc.style.stroke = lRatio === 0 ? "transparent" : leanColor;
+            leanRArc.style.stroke = rRatio === 0 ? "transparent" : leanColor;
+
+            // G-Force
+            let gForce = targetGForce + (Math.abs(leanBase) * 0.01);
+            if (gForce > sessionMaxG) sessionMaxG = gForce;
+            gforceVal.textContent = gForce.toFixed(2) + " G";
+
+            // Cruise Control simulation logic
+            if (speed > 50) {
+                cruiseVal.textContent = "ACTIVE";
+                cruiseVal.style.color = "var(--rpm-green)";
+            } else if (speed > 10) {
+                cruiseVal.textContent = "ON";
+                cruiseVal.style.color = "var(--text-main)";
+            } else {
+                cruiseVal.textContent = "OFF";
+                cruiseVal.style.color = "var(--text-muted)";
+            }
+
+            // Update Session Stats Elements
+            maxLeanLEl.innerHTML = Math.round(sessionMaxLeanL) + "<span>°</span>";
+            maxLeanREl.innerHTML = Math.round(sessionMaxLeanR) + "<span>°</span>";
+            maxWheelieEl.innerHTML = sessionMaxWheelie.toFixed(1) + "<span>°</span>";
+            maxStoppieEl.innerHTML = sessionMaxStoppie.toFixed(1) + "<span>°</span>";
+            maxGEl.innerHTML = sessionMaxG.toFixed(2) + "<span>G</span>";
+
+            let totalSec = Math.floor(sessionTimeMs / 1000);
+            let m = Math.floor(totalSec / 60);
+            let s = totalSec % 60;
+            document.getElementById('session-time-val').textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+            document.getElementById('session-dist-val').innerHTML = sessionDistance.toFixed(1) + "<span>km</span>";
+        }
+
+        function generateTelemetry() {
+            if (isBooting) {
+                bootTime += 100;
+                if (bootTime < 800) {
+                    targetRpm = maxRpm; // Smooth RPM sweep
+                    targetSpeed = 0;
+                    gear = 0;
+                    targetThrottle = 0;
+                } else if (bootTime < 2000) {
+                    targetRpm = IDLE_RPM; // Return to idle
+                    targetSpeed = 0;
+                    gear = 0;
+                    targetThrottle = 0;
+                } else {
+                    isBooting = false;
+                    simPhase = 'IDLE';
+                    simTimer = 0;
+                }
+                return;
+            }
+
+            time++;
+            simTimer++;
+            sessionTimeMs += 100;
+
+            switch (simPhase) {
+                case 'IDLE':
+                    simGear = 0;
+                    simSpeed = 0;
+                    simRpm = IDLE_RPM;
+                    targetThrottle = 0;
+                    targetGForce = 1.0;
+
+                    if (simTimer > 20) { // 2 seconds idle
+                        simPhase = 'SHIFTING_UP';
+                        simTimer = 0;
+                        simGear = 1;
+                    }
+                    break;
+
+                case 'ACCELERATING':
+                    targetThrottle = 85 + Math.random() * 15; // 85-100% throttle
+
+                    // Acceleration rate based on gear
+                    let accRate = (MAX_GEAR - simGear + 2) * 0.8;
+                    simSpeed += accRate;
+
+                    simRpm = simSpeed / gearRatios[simGear];
+
+                    targetGForce = 1.0 + (accRate * 0.12);
+
+                    if (simRpm > REDLINE_RPM) {
+                        if (simGear < MAX_GEAR) {
+                            simPhase = 'SHIFTING_UP';
+                            simTimer = 0;
+                            simGear++;
+                        } else {
+                            simPhase = 'DECELERATING';
+                            simTimer = 0;
+                        }
+                    }
+                    break;
+
+                case 'SHIFTING_UP':
+                    targetThrottle = 0;
+                    targetGForce = 0.95; // Slight deceleration Gs during shift
+
+                    // Drop RPM towards next gear match
+                    let targetNextRpm = simSpeed / gearRatios[simGear];
+                    simRpm -= (simRpm - targetNextRpm) * 0.5; // Quickly drop RPM
+
+                    if (simTimer > 3) { // 300ms shift time
+                        simPhase = 'ACCELERATING';
+                    }
+                    break;
+
+                case 'DECELERATING':
+                    targetThrottle = 0;
+                    simSpeed -= 2.5; // Braking
+
+                    if (simSpeed < 0) simSpeed = 0;
+
+                    if (simGear > 0) {
+                        simRpm = simSpeed / gearRatios[simGear];
+                        targetGForce = 0.5; // Braking Gs (< 1.0)
+
+                        // Downshift if RPM drops too low
+                        if (simRpm < 4000 && simGear > 1) {
+                            simGear--;
+                            simRpm = simSpeed / gearRatios[simGear]; // Rev match
+                        } else if (simSpeed < 10 && simGear === 1) {
+                            simGear = 0; // N
+                            simRpm = IDLE_RPM;
+                        }
+                    } else {
+                        targetGForce = 1.0;
+                    }
+
+                    if (simSpeed === 0 && simGear === 0) {
+                        simPhase = 'IDLE';
+                        simTimer = 0;
+                    }
+                    break;
+            }
+
+            targetSpeed = simSpeed;
+            targetRpm = simRpm;
+            gear = simGear;
+        }
+
+        setInterval(generateTelemetry, 100);
+        function renderLoop() {
+            updateUI();
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- SPA & ACHIEVEMENTS LOGIC ---
+        const navDash = document.getElementById('nav-dash');
+        const navAch = document.getElementById('nav-ach');
+        const navSet = document.getElementById('nav-set');
+        const pageDash = document.getElementById('page-dash');
+        const pageAch = document.getElementById('page-achievements');
+        const pageSet = document.getElementById('page-settings');
+
+        let hasVisitedAchievements = false;
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                // easeOutCubic
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                obj.textContent = Math.floor(easeOut * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.textContent = end;
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        if(navDash && navAch && navSet) {
+            const navs = [navDash, navAch, navSet];
+            const pages = [pageDash, pageAch, pageSet];
+
+            function switchPage(activeNav, activePage) {
+                navs.forEach(n => n.classList.remove('active'));
+                pages.forEach(p => p.classList.remove('active'));
+                activeNav.classList.add('active');
+                activePage.classList.add('active');
+            }
+
+            navDash.addEventListener('click', () => switchPage(navDash, pageDash));
+            navSet.addEventListener('click', () => switchPage(navSet, pageSet));
+            navAch.addEventListener('click', () => {
+                switchPage(navAch, pageAch);
+
+                if (!hasVisitedAchievements) {
+                    hasVisitedAchievements = true;
+                    
+                    const hero = document.querySelector('.ach-hero');
+                    const lbl = document.querySelector('.ach-records-lbl');
+                    const cards = document.querySelector('.ach-cards-container');
+                    
+                    if (hero) hero.classList.add('animate-entrance');
+                    if (lbl) lbl.classList.add('animate-entrance');
+                    if (cards) cards.classList.add('animate-entrance');
+
+                    const speedEl = document.getElementById('ach-speed-val');
+                    if (speedEl) animateValue(speedEl, 0, achTopSpeed, 1500);
+                }
+            });
+        }
+
+        function getFakeDate(daysAgo) {
+            let d = new Date();
+            d.setDate(d.getDate() - daysAgo);
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + " " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        let achTopSpeed = 242;
+        let ach0100 = 3.6;
+        let achMaxG = 1.25;
+        let achLeanL = 52;
+        let achLeanR = 48;
+        let achWheelie = 12.4;
+        let achStoppie = 8.1;
+
+        document.getElementById('ach-speed-val').textContent = achTopSpeed;
+        document.getElementById('ach-speed-date').textContent = getFakeDate(12);
+
+        document.getElementById('ach-0100-val').innerHTML = ach0100.toFixed(1) + "<span style='font-size:10px;color:var(--text-muted);margin-left:2px;'>S</span>";
+        document.getElementById('ach-0100-date').textContent = getFakeDate(12);
+
+        document.getElementById('ach-g-val').textContent = achMaxG.toFixed(2) + " G";
+        document.getElementById('ach-g-date').textContent = getFakeDate(2);
+
+        document.getElementById('ach-lean-l-val').textContent = achLeanL + "°";
+        document.getElementById('ach-lean-l-date').textContent = getFakeDate(5);
+
+        document.getElementById('ach-lean-r-val').textContent = achLeanR + "°";
+        document.getElementById('ach-lean-r-date').textContent = getFakeDate(5);
+
+        document.getElementById('ach-wheelie-val').textContent = achWheelie.toFixed(1) + "°";
+        document.getElementById('ach-wheelie-date').textContent = getFakeDate(8);
+
+        document.getElementById('ach-stoppie-val').textContent = achStoppie.toFixed(1) + "°";
+        document.getElementById('ach-stoppie-date').textContent = getFakeDate(15);
+
+        let achRideDist = 342.5;
+        let achRideTime = "4h 25m";
+
+        document.getElementById('ach-dist-val').innerHTML = achRideDist.toFixed(1) + "<span style='font-size:10px;color:var(--text-muted);margin-left:2px;'>KM</span>";
+        document.getElementById('ach-dist-date').textContent = getFakeDate(28);
+
+        document.getElementById('ach-time-val').textContent = achRideTime;
+        document.getElementById('ach-time-date').textContent = getFakeDate(28);
+
+        // Start render loop
+        requestAnimationFrame(renderLoop);
+    </script>
+</body>
+
+</html>
